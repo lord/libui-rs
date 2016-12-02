@@ -4,7 +4,35 @@ extern crate ui;
 
 use ui::{BoxControl, Button, Checkbox, ColorButton, Combobox, DateTimePicker, Entry};
 use ui::{FontButton, Group, InitOptions, Label, Menu, MenuItem, ProgressBar, RadioButtons};
-use ui::{Separator, Slider, Spinbox, Tab, Window};
+use ui::{Separator, Slider, Spinbox, Tab, Window, AreaHandler, Area, AreaDrawParams, AreaMouseEvent, AreaKeyEvent};
+use ui::draw::text::{Layout, FontDescriptor, Weight, Italic, Stretch};
+
+struct Foo {
+  text: String,
+}
+
+impl AreaHandler for Foo {
+  fn draw(&mut self, area: &Area, area_draw_params: &AreaDrawParams) {
+    let ctx = &area_draw_params.context;
+    let w = Weight::Normal;
+    let i = Italic::Normal;
+    let s = Stretch::Normal;
+    let font = FontDescriptor::new("Operator Mono Ssm", 11.0, w, i, s).load_closest_font();
+    self.text = "chicken!".to_string();
+    let lay = Layout::new(&self.text, &font, 1000.0);
+    lay.set_color(1,3,0.0,1.0,0.0,1.0);
+    ctx.draw_text(0.0, 0.0, &lay);
+  }
+  fn mouse_event(&mut self, _area: &Area, e: &AreaMouseEvent) {
+    println!("{:?}", e);
+  }
+  // fn mouse_crossed(&mut self, _area: &Area, _left: bool) { ... }
+  // fn drag_broken(&mut self, _area: &Area) { ... }
+  fn key_event(&mut self, _area: &Area, e: &AreaKeyEvent) -> bool {
+    println!("{:?} : {:?} : {:?}", e.key, e.modifiers, e.up);
+    true
+  }
+}
 
 fn run() {
     let menu = Menu::new("File");
@@ -23,99 +51,13 @@ fn run() {
     menu.append_about_item();
 
     let mainwin = Window::new("ui Control Gallery", 640, 480, true);
-    mainwin.set_margined(true);
+    mainwin.set_margined(false);
     mainwin.on_closing(Box::new(|_| {
         ui::quit();
         false
     }));
-
-    let vbox = BoxControl::new_vertical();
-    vbox.set_padded(true);
-    mainwin.set_child(vbox.clone().into());
-
-    let hbox = BoxControl::new_horizontal();
-    hbox.set_padded(true);
-    vbox.append(hbox.clone().into(), true);
-
-    let group = Group::new("Basic Controls");
-    group.set_margined(true);
-    hbox.append(group.clone().into(), false);
-
-    let inner = BoxControl::new_vertical();
-    inner.set_padded(true);
-    group.set_child(inner.clone().into());
-
-    inner.append(Button::new("Button").into(), false);
-    inner.append(Checkbox::new("Checkbox").into(), false);
-    let entry = Entry::new();
-    entry.set_text("Entry");
-    inner.append(entry.into(), false);
-    inner.append(Label::new("Label").into(), false);
-    inner.append(Separator::new_horizontal().into(), false);
-
-    inner.append(DateTimePicker::new_date_picker().into(), false);
-    inner.append(DateTimePicker::new_time_picker().into(), false);
-    inner.append(DateTimePicker::new_date_time_picker().into(), false);
-
-    inner.append(FontButton::new().into(), false);
-    inner.append(ColorButton::new().into(), false);
-
-    let inner2 = BoxControl::new_vertical();
-    inner2.set_padded(true);
-    hbox.append(inner2.clone().into(), true);
-
-    let group = Group::new("Numbers");
-    group.set_margined(true);
-    inner2.append(group.clone().into(), false);
-
-    let inner = BoxControl::new_vertical();
-    inner.set_padded(true);
-    group.set_child(inner.clone().into());
-
-    let spinbox = Spinbox::new(0, 100);
-    spinbox.on_changed(Box::new(|spinbox| update(spinbox.value())));
-    inner.append(spinbox.into(), false);
-
-    let slider = Slider::new(0, 100);
-    slider.on_changed(Box::new(|slider| update(slider.value())));
-    inner.append(slider.into(), false);
-
-    let progress_bar = ProgressBar::new();
-    inner.append(progress_bar.into(), false);
-
-    let group = Group::new("Lists");
-    group.set_margined(true);
-    inner2.append(group.clone().into(), false);
-
-    let inner = BoxControl::new_vertical();
-    inner.set_padded(true);
-    group.set_child(inner.clone().into());
-
-    let cbox = Combobox::new();
-    cbox.append("Combobox Item 1");
-    cbox.append("Combobox Item 2");
-    cbox.append("Combobox Item 3");
-    inner.append(cbox.into(), false);
-
-    // FIXME(jamesmunns) Editable comboboxes are a nogo
-
-    // let cbox = Combobox::new_editable();
-    // cbox.append("Editable Item 1");
-    // cbox.append("Editable Item 2");
-    // cbox.append("Editable Item 3");
-    // inner.append(cbox.into(), false);
-
-    let rb = RadioButtons::new();
-    rb.append("Radio Button 1");
-    rb.append("Radio Button 2");
-    rb.append("Radio Button 3");
-    inner.append(rb.into(), true);
-
-    let tab = Tab::new();
-    tab.append("Page 1", BoxControl::new_horizontal().into());
-    tab.append("Page 2", BoxControl::new_horizontal().into());
-    tab.append("Page 3", BoxControl::new_horizontal().into());
-    inner2.append(tab.into(), true);
+    let area = Area::new_scrolling(Box::new(Foo{text: "meow".to_string()}), 640, 500);
+    mainwin.set_child(area.into());
 
     mainwin.show();
     ui::main();
